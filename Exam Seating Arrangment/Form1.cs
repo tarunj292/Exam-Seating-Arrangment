@@ -307,6 +307,67 @@ namespace Exam_Seating_Arrangment
         private void button4_Click(object sender, EventArgs e)
         {
 
+                    using (SqlConnection dbConnection = new SqlConnection(@"Data Source=Short-Feet\SQLEXPRESS; Initial Catalog=dotnet2; Integrated Security=SSPI;"))
+                    {
+                        dbConnection.Open();
+
+                        while (!csvReader.EndOfData)
+                        {
+                            string[] fields = csvReader.ReadFields();
+                            string query = "INSERT INTO Courses (course_name) VALUES (@CourseName)";
+                            using (SqlCommand command = new SqlCommand(query, dbConnection))
+                            {
+                                command.Parameters.AddWithValue("@CourseName", fields[0]);
+                                command.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error inserting data from Courses CSV into SQL Server: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
+        private void InsertProgrammeCoursesData(string csvFilePath)
+        {
+            try
+            {
+                using (TextFieldParser csvReader = new TextFieldParser(csvFilePath))
+                {
+                    csvReader.SetDelimiters(new string[] { "," });
+                    csvReader.HasFieldsEnclosedInQuotes = true;
+
+                    using (SqlConnection dbConnection = new SqlConnection(@"Data Source=Short-Feet\SQLEXPRESS; Initial Catalog=dotnet2; Integrated Security=SSPI;"))
+                    {
+                        dbConnection.Open();
+
+                        while (!csvReader.EndOfData)
+                        {
+                            string[] fields = csvReader.ReadFields();
+                            string query = "INSERT INTO ProgrammeCourses (programme_name, course_name) VALUES (@ProgrammeName, @CourseName)";
+                            using (SqlCommand command = new SqlCommand(query, dbConnection))
+                            {
+                                command.Parameters.AddWithValue("@ProgrammeName", fields[0]);
+                                command.Parameters.AddWithValue("@CourseName", fields[1]);
+                                command.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error inserting data from ProgrammeCourses CSV into SQL Server: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+            //Function to Call CSV to DATABASE CONVERSION
+            CSVToDBDataInsertion();
         }
     }
 }
