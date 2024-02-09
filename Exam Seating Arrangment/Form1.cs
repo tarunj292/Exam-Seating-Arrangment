@@ -85,7 +85,7 @@ namespace Exam_Seating_Arrangment
 
         private void ReadStudents(SqlConnection con, Dictionary<string, List<List<(long, string)>>> classrooms)
         {
-            using (FileStream fs = new FileStream("C://Tarun_java//seating.pdf", FileMode.Create))
+            using (FileStream fs = new FileStream("C://Users//Pulin//Desktop//Project", FileMode.Create))
             {
                 Document document = new Document();
                 PdfWriter.GetInstance(document, fs);
@@ -94,6 +94,7 @@ namespace Exam_Seating_Arrangment
                 string query = "SELECT RollNumber, Course FROM Student";
                 using (SqlCommand command = new SqlCommand(query, con))
                 {
+                    Console.WriteLine("hell");
                     command.Parameters.AddWithValue("@Course", courseFilter);
                     using (SqlDataReader reader = command.ExecuteReader())
                     {
@@ -300,6 +301,11 @@ namespace Exam_Seating_Arrangment
             {
                 return true;
             }
+        }
+
+        private void button4_Click(object sender, EventArgs e)
+        {
+
         }
     }
 }
