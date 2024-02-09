@@ -35,6 +35,7 @@ namespace Exam_Seating_Arrangment
                     con.Open();
                     //InsertClassRoomsInDB(con);
                     //InsertStudentSInDB(con);
+                    //remove this for git testing
 
                     //Fetch classroom data from the database
                     Dictionary<string, int> classroomData = FetchClassroomDataFromDatabase(connectionString);
