@@ -68,7 +68,7 @@ namespace Exam_Seating_Arrangment
             {
                 con.Open();
                 string courseFilter = textBox1.Text;
-                string query = "SELECT COUNT(*) AS CourseCount FROM Student WHERE Course = @Course";
+                string query = "SELECT COUNT(*) AS CourseCount FROM Student";
                 using (SqlCommand command = new SqlCommand(query, con))
                 {
                     command.Parameters.AddWithValue("@Course", courseFilter);
@@ -91,7 +91,7 @@ namespace Exam_Seating_Arrangment
                 PdfWriter.GetInstance(document, fs);
                 document.Open();
                 string courseFilter = textBox1.Text;
-                string query = "SELECT RollNumber, Course FROM Student where Course = @Course";
+                string query = "SELECT RollNumber, Course FROM Student";
                 using (SqlCommand command = new SqlCommand(query, con))
                 {
                     command.Parameters.AddWithValue("@Course", courseFilter);
@@ -197,7 +197,7 @@ namespace Exam_Seating_Arrangment
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
                 string RoomFilter = textBox2.Text;
-                string query = "SELECT RoomNumber, Capacity FROM Classroom where RoomNumber = @RoomNumber";
+                string query = "SELECT RoomNumber, Capacity FROM Classroom";
                 SqlCommand command = new SqlCommand(query, connection);
                 connection.Open();
                 command.Parameters.AddWithValue("@RoomNumber", RoomFilter);
