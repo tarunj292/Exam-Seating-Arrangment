@@ -13,6 +13,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
+using Microsoft.VisualBasic.FileIO;
+using Org.BouncyCastle.Utilities.Collections;
 
 
 namespace Exam_Seating_Arrangment
@@ -20,8 +22,8 @@ namespace Exam_Seating_Arrangment
     public partial class Form1 : Form
     {
         // Connection string for SQL Server
-        string connectionString = "Data Source=TARUNJOSHI\\SQLEXPRESS;Initial Catalog=ExamCell;Integrated Security=True";
-
+        string connectionString = "Data Source=TARUNJOSHI\\SQLEXPRESS;Initial Catalog=ExaminationCell;Integrated Security=True";
+        Dictionary<string, List<List<(long, string)>>> classrooms;
         public Form1()
         {
             InitializeComponent();
@@ -33,16 +35,10 @@ namespace Exam_Seating_Arrangment
                 using (SqlConnection con = new SqlConnection(connectionString))
                 {
                     con.Open();
-                    //InsertClassRoomsInDB(con);
-                    //InsertStudentSInDB(con);
-                    //remove this for git testing
-
-                    //Fetch classroom data from the database
-                    Dictionary<string, int> classroomData = FetchClassroomDataFromDatabase(connectionString);
                     // Create the classrooms dictionary
-                    Dictionary<string, List<List<(long, string)>>> classrooms = new Dictionary<string, List<List<(long, string)>>>();
+                    classrooms = getClassRoomDataFromDataGridView();
                     // Populate the classrooms dictionary based on the fetched data
-                    foreach (var kvp in classroomData)
+                    /*foreach (var kvp in classroomData)
                     {
                         string classroomNumber = kvp.Key;
                         int loopCondition = kvp.Value;
@@ -51,9 +47,9 @@ namespace Exam_Seating_Arrangment
                         {
                             classrooms[classroomNumber].Add(new List<(long, string)>());
                         }
-                    }
-                    printLength();
+                    }*/
                     ReadStudents(con, classrooms);
+                    con.Close();
                 }
                 MessageBox.Show("Data successfully inserted into database.");
             }
@@ -61,6 +57,46 @@ namespace Exam_Seating_Arrangment
             {
                 MessageBox.Show($"An error occurred: {ex.Message}");
             }
+        }
+
+        private Dictionary<string, List<List<(long, string)>>> getClassRoomDataFromDataGridView()
+        {
+            Dictionary<string, List<List<(long, string)>>> classrooms = new Dictionary<string, List<List<(long, string)>>>();
+            foreach (DataGridViewRow row in dataGridView2.Rows)
+            {
+                // Retrieve data from dataGridView2
+                string roomNumber = row.Cells["RoomNumberColumn"].Value?.ToString();
+                string capacity = row.Cells["CapacityColumn"].Value?.ToString();
+
+                // Check if roomNumber and capacity are not null or empty
+                if (!string.IsNullOrEmpty(roomNumber) && !string.IsNullOrEmpty(capacity))
+                {
+                    // Convert capacity to long
+                    if (long.TryParse(capacity, out long capacityValue))
+                    {
+                        string classroomNumber = roomNumber;
+                        long loopCondition = Convert.ToInt64(capacity);
+                        loopCondition /= 2;
+                        MessageBox.Show(classroomNumber);
+                        classrooms[classroomNumber] = new List<List<(long, string)>>();
+                        for (int i = 0; i < loopCondition; i++)
+                        {
+                            classrooms[classroomNumber].Add(new List<(long, string)>());
+                        }
+                    }
+                    else
+                    {
+                        // Handle invalid capacity
+                        // You may display an error message or take appropriate action
+                    }
+                }
+                else
+                {
+                    // Handle missing room number or capacity
+                    // You may display an error message or take appropriate action
+                }
+            }
+            return classrooms;
         }
 
         private void printLength()
@@ -82,28 +118,98 @@ namespace Exam_Seating_Arrangment
                 }
             }
         }
+        // Define a DataTable at class level to hold combined results
+        private DataTable combinedDataTable = new DataTable();
+        private void CountStudentsByDetails(SqlConnection con)
+        {
+            string programFilter = textBox2.Text;
+            string query = "SELECT MIN(seat_number) AS FromSeat, MAX(seat_number) AS ToSeat, COUNT(*) AS CourseCount, program AS Program, curr_year AS CurrYear FROM Student where Program = @Program GROUP BY program, curr_year;";
+            SqlCommand cmd = new SqlCommand(query, con);
+            cmd.Parameters.AddWithValue("@Program", programFilter);
+            SqlDataAdapter ad = new SqlDataAdapter(cmd);
+            DataTable dt = new DataTable();
+            ad.Fill(dt);
 
+            //Merge the new DataTable with the combinedDataTable
+            combinedDataTable.Merge(dt);
+            dataGridView1.DataSource = combinedDataTable; // Assign combinedDataTable to the DataGridView
+        }
 
+        Boolean flag = true;
+        private void AddRoom()
+        {
+            createColumn();
+            string roomNumber = txtRoomNumber.Text;
+            if (string.IsNullOrEmpty(roomNumber))
+            {
+                MessageBox.Show("Please Enter Room Number. e.g. 501");
+            }
+            int Capacity;
+            if (!int.TryParse(txtCapacity.Text, out Capacity))
+            {
+                MessageBox.Show("Invalid capacity. Please enter a valid number.");
+                return;
+            }
+
+            // Add data to dataGridView2;
+            dataGridView2.Rows.Add(roomNumber, Capacity);
+
+            // Clear textboxes after adding data
+            txtRoomNumber.Clear();
+            txtCapacity.Clear();
+            classrooms = getClassRoomDataFromDataGridView();
+        }
+
+        private void createColumn()
+        {
+            if (flag)
+            {
+                dataGridView2.Columns.Add("RoomNumberColumn", "Room Number");
+                dataGridView2.Columns.Add("CapacityColumn", "Capacity");
+                flag = false;
+            }
+        }
+        Boolean first = true;
         private void ReadStudents(SqlConnection con, Dictionary<string, List<List<(long, string)>>> classrooms)
         {
-            using (FileStream fs = new FileStream("C://Users//Pulin//Desktop//Project", FileMode.Create))
+            FileMode fm;
+            if (first)
+            {
+                fm = FileMode.Create;
+                first = false;
+            }
+            else
+            {
+                fm = FileMode.Append;
+            }
+            using (FileStream fs = new FileStream("C://Tarun_java//seating.pdf", fm))
             {
                 Document document = new Document();
                 PdfWriter.GetInstance(document, fs);
                 document.Open();
-                string courseFilter = textBox1.Text;
-                string query = "SELECT RollNumber, Course FROM Student";
+                string[] programFilters = getSelectedProgramsFromDataGridView();
+
+                // Create a parameterized SQL query string with the appropriate number of parameters
+                string query = $"SELECT * FROM Student WHERE program IN ({string.Join(",", programFilters.Select((_, i) => $"@Program{i}"))})";
+
+                /*string programFilter = textBox2.Text;
+                string query = "Select * from Student where program = @Program";*/
                 using (SqlCommand command = new SqlCommand(query, con))
                 {
-                    Console.WriteLine("hell");
-                    command.Parameters.AddWithValue("@Course", courseFilter);
+
+                    for (int i = 0; i < programFilters.Length; i++)
+                    {
+                        command.Parameters.AddWithValue($"@Program{i}", programFilters[i]);
+                    }
+
+                    //command.Parameters.AddWithValue("@Program", programFilter);
                     using (SqlDataReader reader = command.ExecuteReader())
                     {
                         //Console.WriteLine("Roll Number\tCourse");
                         //Console.WriteLine("------------------------");
                         while (reader.Read())
                         {
-                            long rollNumber = reader.GetInt64(0);
+                            long rollNumber = Convert.ToInt64(reader.GetString(0));
                             string course = reader.GetString(1);
                             bool assigned = false;
                             foreach (var classroom in classrooms)
@@ -126,8 +232,10 @@ namespace Exam_Seating_Arrangment
                             }
                             if (!assigned)
                             {
-                                document.Add(new Paragraph($"Unable to assign student {rollNumber} of {course}"));
-                                Console.WriteLine($"{rollNumber}\t\t{course}");
+                                //Instead of adding it in document i am first storing them in dictionary
+                                Dictionary<long, string> UnAssigned = new Dictionary<long, string>();
+                                UnAssigned.Add(rollNumber, course);
+                                //document.Add(new Paragraph($"Unable to assign student {rollNumber} of {course}"));
                             }
 
                         }
@@ -184,107 +292,45 @@ namespace Exam_Seating_Arrangment
                         }
                         document.Add(new Paragraph());
                     }
-
+                    //I will close document when user click finished
                     document.Close();
                 }
             }
         }
-        private Dictionary<string, int> FetchClassroomDataFromDatabase(string connectionString)
-        {
-            // Connect to your SQL database and fetch data
-            // This is a simplified example assuming you have a table named Classrooms
-            // with columns ClassroomNumber and LoopCondition
-            Dictionary<string, int> classroomData = new Dictionary<string, int>();
 
-            using (SqlConnection connection = new SqlConnection(connectionString))
+        private string[] getSelectedProgramsFromDataGridView()
+        {
+            string[] programFilters = new string[dataGridView1.RowCount-1];
+            int count = 0;
+            foreach (DataGridViewRow row in dataGridView1.Rows)
             {
-                string RoomFilter = textBox2.Text;
-                string query = "SELECT RoomNumber, Capacity FROM Classroom";
-                SqlCommand command = new SqlCommand(query, connection);
-                connection.Open();
-                command.Parameters.AddWithValue("@RoomNumber", RoomFilter);
-                SqlDataReader reader = command.ExecuteReader();
-                while (reader.Read())
+                // Retrieve data from dataGridView2
+                string selectedProgram = row.Cells["Program"].Value?.ToString();
+
+                // Check if roomNumber and capacity are not null or empty
+                if (!string.IsNullOrEmpty(selectedProgram))
                 {
-                    string RoomNumber = "Room No. :" + reader["RoomNumber"].ToString();
-                    int loopCondition = Convert.ToInt32(reader["Capacity"]);
-                    classroomData[RoomNumber] = loopCondition;
+                    MessageBox.Show(selectedProgram);
+                    programFilters[count] = selectedProgram;
+                    count++;
+
                 }
-                reader.Close();
-            }
-
-            return classroomData;
-        }
-
-        private void InsertStudentSInDB(SqlConnection con)
-        {
-            //dictionary to store student data
-            Dictionary<long, string> BAFStudents = new Dictionary<long, string>();
-            Dictionary<long, string> BAFHonsStudents = new Dictionary<long, string>();
-            Dictionary<long, string> BBAFinanceStudents = new Dictionary<long, string>();
-            Dictionary<long, string> BBAHRStudents = new Dictionary<long, string>();
-            Dictionary<long, string> BBAMarketingStudents = new Dictionary<long, string>();
-
-            //fill dictionaries with data
-            for (long rollnumber = 31011122001; rollnumber <= 31011122256; rollnumber++)
-            {
-                if (rollnumber >= 31011122001 && rollnumber <= 31011122072)
-                    BAFStudents.Add(rollnumber, "baf");
-                else if (rollnumber >= 31011122073 && rollnumber <= 31011122104)
-                    BAFHonsStudents.Add(rollnumber, "baf hons");
-                else if (rollnumber >= 31011122105 && rollnumber <= 31011122172)
-                    BBAHRStudents.Add(rollnumber, "bba finance");
-                else if (rollnumber >= 31011122173 && rollnumber <= 31011122188)
-                    BBAFinanceStudents.Add(rollnumber, "bba hr");
                 else
-                    BBAMarketingStudents.Add(rollnumber, "bba marketing");
-            }
-
-            // Insert data into Students table
-            InsertStudents(con, BAFStudents);
-            InsertStudents(con, BAFHonsStudents);
-            InsertStudents(con, BBAFinanceStudents);
-            InsertStudents(con, BBAHRStudents);
-            InsertStudents(con, BBAMarketingStudents);
-        }
-
-        private void InsertStudents(SqlConnection con, Dictionary<long, string> students)
-        {
-            // Method to insert student data into Students table
-            foreach (var student in students)
-            {
-                string query = "INSERT INTO Student (RollNumber, Course) VALUES (@RollNumber, @Course)";
-                using (SqlCommand command = new SqlCommand(query, con))
                 {
-                    command.Parameters.AddWithValue("@RollNumber", student.Key);
-                    command.Parameters.AddWithValue("@Course", student.Value);
-                    command.ExecuteNonQuery();
+                    // Handle missing room number or capacity
+                    // You may display an error message or take appropriate action
                 }
             }
-        }
 
-        private void InsertClassRoomsInDB(SqlConnection con)
-        {
-            // Insert data into Classroom table
-            InsertClassroom(con, 501, 20);
-            InsertClassroom(con, 502, 16);
-            InsertClassroom(con, 505, 16);
-            InsertClassroom(con, 701, 21);
-            InsertClassroom(con, 702, 21);
-            InsertClassroom(con, 703, 17);
-            InsertClassroom(con, 705, 17);
-        }
-
-        private void InsertClassroom(SqlConnection con, int RoomNumber, int Capacity)
-        {
-            string query = "INSERT INTO Classroom (RoomNumber, Capacity) VALUES (@RoomNumber, @Capacity)";
-            using (SqlCommand command = new SqlCommand(query, con))
+            for(int i = 0; i<programFilters.Count(); i++)
             {
-                command.Parameters.AddWithValue("@RoomNumber", RoomNumber);
-                command.Parameters.AddWithValue("@Capacity", Capacity);
-                command.ExecuteNonQuery();
+                MessageBox.Show(i.ToString());
+                MessageBox.Show(programFilters[i]);
             }
+
+            return programFilters;
         }
+
         private bool CompareWithBenchsFirstStudent(object studentValue, List<(long, string)> bench)
         {
             if (bench.Count != 0)
@@ -306,30 +352,27 @@ namespace Exam_Seating_Arrangment
 
         private void button4_Click(object sender, EventArgs e)
         {
-
-                    using (SqlConnection dbConnection = new SqlConnection(@"Data Source=Short-Feet\SQLEXPRESS; Initial Catalog=dotnet2; Integrated Security=SSPI;"))
-                    {
-                        dbConnection.Open();
-
-                        while (!csvReader.EndOfData)
-                        {
-                            string[] fields = csvReader.ReadFields();
-                            string query = "INSERT INTO Courses (course_name) VALUES (@CourseName)";
-                            using (SqlCommand command = new SqlCommand(query, dbConnection))
-                            {
-                                command.Parameters.AddWithValue("@CourseName", fields[0]);
-                                command.ExecuteNonQuery();
-                            }
-                        }
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error inserting data from Courses CSV into SQL Server: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
+            
         }
 
+        private void CSVToDBDataInsertion()
+        {
+            // Replace these paths with the actual paths to your CSV files
+            string studentCsvFilePath = @"C:\Users\tarun\Downloads\csvfiles\eg - Sheet1.csv";
+            //string classroomCsvFilePath = @"C:\Users\tarun\Downloads\csvfiles\eg - Sheet3.csv";
+            string programmeCsvFilePath = @"C:\Users\tarun\Downloads\csvfiles\eg - Sheet2.csv";
+            string courseCsvFilePath = @"C:\Users\tarun\Downloads\csvfiles\eg - Sheet4.csv";
+            string programmeCoursesCsvFilePath = @"C:\Users\tarun\Downloads\csvfiles\eg - Sheet5.csv";
+
+            // Insert data from CSV files into respective tables
+            InsertStudentData(studentCsvFilePath);
+            //InsertClassroomData(classroomCsvFilePath);
+            InsertProgrammeData(programmeCsvFilePath);
+            InsertCourseData(courseCsvFilePath);
+            InsertProgrammeCoursesData(programmeCoursesCsvFilePath);
+
+            MessageBox.Show("CSV data successfully imported into SQL Server!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+        }
 
         private void InsertProgrammeCoursesData(string csvFilePath)
         {
@@ -340,7 +383,7 @@ namespace Exam_Seating_Arrangment
                     csvReader.SetDelimiters(new string[] { "," });
                     csvReader.HasFieldsEnclosedInQuotes = true;
 
-                    using (SqlConnection dbConnection = new SqlConnection(@"Data Source=Short-Feet\SQLEXPRESS; Initial Catalog=dotnet2; Integrated Security=SSPI;"))
+                    using (SqlConnection dbConnection = new SqlConnection(connectionString))
                     {
                         dbConnection.Open();
 
@@ -364,7 +407,162 @@ namespace Exam_Seating_Arrangment
             }
         }
 
-        private void button4_Click(object sender, EventArgs e)
+        private void InsertStudentData(string csvFilePath)
+        {
+            try
+            {
+                using (TextFieldParser csvReader = new TextFieldParser(csvFilePath))
+                {
+                    csvReader.SetDelimiters(new string[] { "," });
+                    csvReader.HasFieldsEnclosedInQuotes = true;
+                    //Replace Connection String
+                    using (SqlConnection dbConnection = new SqlConnection(connectionString))
+                    {
+                        dbConnection.Open();
+
+                        while (!csvReader.EndOfData)
+                        {
+                            string[] fields = csvReader.ReadFields();
+                            string query = "INSERT INTO Student (seat_number, program, curr_year, isActive) VALUES (@SeatNumber, @Program, @CurrYear, @IsActive)";
+                            using (SqlCommand command = new SqlCommand(query, dbConnection))
+                            {
+                                command.Parameters.AddWithValue("@SeatNumber", fields[0]);
+                                command.Parameters.AddWithValue("@Program", fields[1]);
+                                command.Parameters.AddWithValue("@CurrYear", fields[2]);
+
+                                // Convert isActive string to boolean
+                                bool isActiveValue = (fields[3].ToLower() == "yes" || fields[3] == "1");
+                                command.Parameters.AddWithValue("@IsActive", isActiveValue);
+
+                                command.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error inserting data from Student CSV into SQL Server: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void InsertClassroomData(string csvFilePath)
+        {
+            try
+            {
+                using (TextFieldParser csvReader = new TextFieldParser(csvFilePath))
+                {
+                    csvReader.SetDelimiters(new string[] { "," });
+                    csvReader.HasFieldsEnclosedInQuotes = true;
+
+                    using (SqlConnection dbConnection = new SqlConnection(connectionString))
+                    {
+                        dbConnection.Open();
+
+                        while (!csvReader.EndOfData)
+                        {
+                            string[] fields = csvReader.ReadFields();
+                            int roomNumber = Convert.ToInt32(fields[0]);
+                            int rows = Convert.ToInt32(fields[1]);
+                            int cols = Convert.ToInt32(fields[2]);
+                            int total = Convert.ToInt32(fields[3]);
+
+                            string query = "INSERT INTO Classroom (room_number, rowss, cols, total) VALUES (@RoomNumber, @Rows, @Cols, @Total)";
+                            using (SqlCommand command = new SqlCommand(query, dbConnection))
+                            {
+                                command.Parameters.AddWithValue("@RoomNumber", roomNumber);
+                                command.Parameters.AddWithValue("@Rows", rows);
+                                command.Parameters.AddWithValue("@Cols", cols);
+                                command.Parameters.AddWithValue("@Total", total);
+                                command.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error inserting data from Classroom CSV into SQL Server: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void InsertProgrammeData(string csvFilePath)
+        {
+            try
+            {
+                using (TextFieldParser csvReader = new TextFieldParser(csvFilePath))
+                {
+                    csvReader.SetDelimiters(new string[] { "," });
+                    csvReader.HasFieldsEnclosedInQuotes = true;
+
+                    using (SqlConnection dbConnection = new SqlConnection(connectionString))
+                    {
+                        dbConnection.Open();
+
+                        while (!csvReader.EndOfData)
+                        {
+                            string[] fields = csvReader.ReadFields();
+                            string query = "INSERT INTO Programme (programme_name) VALUES (@ProgrammeName)";
+                            using (SqlCommand command = new SqlCommand(query, dbConnection))
+                            {
+                                command.Parameters.AddWithValue("@ProgrammeName", fields[0]);
+                                command.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error inserting data from Programme CSV into SQL Server: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void InsertCourseData(string csvFilePath)
+        {
+            try
+            {
+                using (TextFieldParser csvReader = new TextFieldParser(csvFilePath))
+                {
+                    csvReader.SetDelimiters(new string[] { "," });
+                    csvReader.HasFieldsEnclosedInQuotes = true;
+
+                    using (SqlConnection dbConnection = new SqlConnection(connectionString))
+                    {
+                        dbConnection.Open();
+
+                        while (!csvReader.EndOfData)
+                        {
+                            string[] fields = csvReader.ReadFields();
+                            string query = "INSERT INTO Courses (course_name) VALUES (@CourseName)";
+                            using (SqlCommand command = new SqlCommand(query, dbConnection))
+                            {
+                                command.Parameters.AddWithValue("@CourseName", fields[0]);
+                                command.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error inserting data from Courses CSV into SQL Server: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void GetStudentCount_Click(object sender, EventArgs e)
+        {
+            SqlConnection con = new SqlConnection(connectionString);
+            con.Open();
+            CountStudentsByDetails(con);
+        }
+
+        private void AddClassRoom_Click(object sender, EventArgs e)
+        {
+            AddRoom();
+        }
+
+        private void insertCSVtoDB_Click(object sender, EventArgs e)
         {
             //Function to Call CSV to DATABASE CONVERSION
             CSVToDBDataInsertion();
