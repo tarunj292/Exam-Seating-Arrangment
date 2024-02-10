@@ -48,7 +48,7 @@ namespace Exam_Seating_Arrangment
                             classrooms[classroomNumber].Add(new List<(long, string)>());
                         }
                     }*/
-                    ReadStudents(con, classrooms);
+                    AssignStudents(con, classrooms);
                     con.Close();
                 }
                 MessageBox.Show("Data successfully inserted into database.");
@@ -77,7 +77,7 @@ namespace Exam_Seating_Arrangment
                         string classroomNumber = roomNumber;
                         long loopCondition = Convert.ToInt64(capacity);
                         loopCondition /= 2;
-                        MessageBox.Show(classroomNumber);
+                        //MessageBox.Show(classroomNumber);
                         classrooms[classroomNumber] = new List<List<(long, string)>>();
                         for (int i = 0; i < loopCondition; i++)
                         {
@@ -170,7 +170,7 @@ namespace Exam_Seating_Arrangment
             }
         }
         Boolean first = true;
-        private void ReadStudents(SqlConnection con, Dictionary<string, List<List<(long, string)>>> classrooms)
+        private void AssignStudents(SqlConnection con, Dictionary<string, List<List<(long, string)>>> classrooms)
         {
             FileMode fm;
             if (first)
@@ -310,7 +310,7 @@ namespace Exam_Seating_Arrangment
                 // Check if roomNumber and capacity are not null or empty
                 if (!string.IsNullOrEmpty(selectedProgram))
                 {
-                    MessageBox.Show(selectedProgram);
+                    //MessageBox.Show(selectedProgram);
                     programFilters[count] = selectedProgram;
                     count++;
 
@@ -324,8 +324,8 @@ namespace Exam_Seating_Arrangment
 
             for(int i = 0; i<programFilters.Count(); i++)
             {
-                MessageBox.Show(i.ToString());
-                MessageBox.Show(programFilters[i]);
+                //MessageBox.Show(i.ToString());
+                //MessageBox.Show(programFilters[i]);
             }
 
             return programFilters;
