@@ -13,6 +13,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using iTextSharp.text;
 using iTextSharp.text.pdf;
+using Microsoft.VisualBasic.FileIO;
 
 
 namespace Exam_Seating_Arrangment
@@ -94,7 +95,6 @@ namespace Exam_Seating_Arrangment
                 string query = "SELECT RollNumber, Course FROM Student";
                 using (SqlCommand command = new SqlCommand(query, con))
                 {
-                    Console.WriteLine("hell");
                     command.Parameters.AddWithValue("@Course", courseFilter);
                     using (SqlDataReader reader = command.ExecuteReader())
                     {
@@ -303,8 +303,150 @@ namespace Exam_Seating_Arrangment
             }
         }
 
-        private void button4_Click(object sender, EventArgs e)
+        private void CSVToDBDataInsertion()
         {
+            // Replace these paths with the actual paths to your CSV files
+            string studentCsvFilePath = @"C:\Users\Pulin\Downloads\eg - Sheet1.csv";
+            string classroomCsvFilePath = @"C:\Users\Pulin\Downloads\eg - Sheet3.csv";
+            string programmeCsvFilePath = @"C:\Users\Pulin\Downloads\eg - Sheet2.csv";
+            string courseCsvFilePath = @"C:\Users\Pulin\Downloads\eg - Sheet4.csv";
+            string programmeCoursesCsvFilePath = @"C:\Users\Pulin\Downloads\eg - Sheet5.csv";
+
+            // Insert data from CSV files into respective tables
+            InsertStudentData(studentCsvFilePath);
+            InsertClassroomData(classroomCsvFilePath);
+            InsertProgrammeData(programmeCsvFilePath);
+            InsertCourseData(courseCsvFilePath);
+            InsertProgrammeCoursesData(programmeCoursesCsvFilePath);
+
+            MessageBox.Show("CSV data successfully imported into SQL Server!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
+        }
+
+        private void InsertStudentData(string csvFilePath)
+        {
+            try
+            {
+                using (TextFieldParser csvReader = new TextFieldParser(csvFilePath))
+                {
+                    csvReader.SetDelimiters(new string[] { "," });
+                    csvReader.HasFieldsEnclosedInQuotes = true;
+                    //Replace Connection String
+                    using (SqlConnection dbConnection = new SqlConnection(@"Data Source=Short-Feet\SQLEXPRESS; Initial Catalog=dotnet2; Integrated Security=SSPI;"))
+                    {
+                        dbConnection.Open();
+
+                        while (!csvReader.EndOfData)
+                        {
+                            string[] fields = csvReader.ReadFields();
+                            string query = "INSERT INTO Student (seat_number, program, curr_year, isActive) VALUES (@SeatNumber, @Program, @CurrYear, @IsActive)";
+                            using (SqlCommand command = new SqlCommand(query, dbConnection))
+                            {
+                                command.Parameters.AddWithValue("@SeatNumber", fields[0]);
+                                command.Parameters.AddWithValue("@Program", fields[1]);
+                                command.Parameters.AddWithValue("@CurrYear", fields[2]);
+
+                                // Convert isActive string to boolean
+                                bool isActiveValue = (fields[3].ToLower() == "yes" || fields[3] == "1");
+                                command.Parameters.AddWithValue("@IsActive", isActiveValue);
+
+                                command.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error inserting data from Student CSV into SQL Server: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
+        private void InsertClassroomData(string csvFilePath)
+        {
+            try
+            {
+                using (TextFieldParser csvReader = new TextFieldParser(csvFilePath))
+                {
+                    csvReader.SetDelimiters(new string[] { "," });
+                    csvReader.HasFieldsEnclosedInQuotes = true;
+
+                    using (SqlConnection dbConnection = new SqlConnection(@"Data Source=Short-Feet\SQLEXPRESS; Initial Catalog=dotnet2; Integrated Security=SSPI;"))
+                    {
+                        dbConnection.Open();
+
+                        while (!csvReader.EndOfData)
+                        {
+                            string[] fields = csvReader.ReadFields();
+                            int roomNumber = Convert.ToInt32(fields[0]);
+                            int rows = Convert.ToInt32(fields[1]);
+                            int cols = Convert.ToInt32(fields[2]);
+                            int total = Convert.ToInt32(fields[3]);
+
+                            string query = "INSERT INTO Classroom (room_number, rowss, cols, total) VALUES (@RoomNumber, @Rows, @Cols, @Total)";
+                            using (SqlCommand command = new SqlCommand(query, dbConnection))
+                            {
+                                command.Parameters.AddWithValue("@RoomNumber", roomNumber);
+                                command.Parameters.AddWithValue("@Rows", rows);
+                                command.Parameters.AddWithValue("@Cols", cols);
+                                command.Parameters.AddWithValue("@Total", total);
+                                command.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error inserting data from Classroom CSV into SQL Server: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
+
+
+        private void InsertProgrammeData(string csvFilePath)
+        {
+            try
+            {
+                using (TextFieldParser csvReader = new TextFieldParser(csvFilePath))
+                {
+                    csvReader.SetDelimiters(new string[] { "," });
+                    csvReader.HasFieldsEnclosedInQuotes = true;
+
+                    using (SqlConnection dbConnection = new SqlConnection(@"Data Source=Short-Feet\SQLEXPRESS; Initial Catalog=dotnet2; Integrated Security=SSPI;"))
+                    {
+                        dbConnection.Open();
+
+                        while (!csvReader.EndOfData)
+                        {
+                            string[] fields = csvReader.ReadFields();
+                            string query = "INSERT INTO Programme (programme_name) VALUES (@ProgrammeName)";
+                            using (SqlCommand command = new SqlCommand(query, dbConnection))
+                            {
+                                command.Parameters.AddWithValue("@ProgrammeName", fields[0]);
+                                command.ExecuteNonQuery();
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error inserting data from Programme CSV into SQL Server: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+
+        private void InsertCourseData(string csvFilePath)
+        {
+            try
+            {
+                using (TextFieldParser csvReader = new TextFieldParser(csvFilePath))
+                {
+                    csvReader.SetDelimiters(new string[] { "," });
+                    csvReader.HasFieldsEnclosedInQuotes = true;
 
                     using (SqlConnection dbConnection = new SqlConnection(@"Data Source=Short-Feet\SQLEXPRESS; Initial Catalog=dotnet2; Integrated Security=SSPI;"))
                     {
@@ -365,7 +507,8 @@ namespace Exam_Seating_Arrangment
 
         private void button4_Click(object sender, EventArgs e)
         {
-            //Function to Call CSV to DATABASE CONVERSION
+            //Function to Call CSV to DATABASE 
+            //Conversion
             CSVToDBDataInsertion();
         }
     }
