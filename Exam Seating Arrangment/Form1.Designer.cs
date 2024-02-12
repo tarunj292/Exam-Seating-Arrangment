@@ -30,6 +30,7 @@
         {
             this.button1 = new System.Windows.Forms.Button();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.insertCSVtoDB = new System.Windows.Forms.Button();
             this.AddClassRoom = new System.Windows.Forms.Button();
             this.GetStudentCount = new System.Windows.Forms.Button();
             this.txtCapacity = new System.Windows.Forms.TextBox();
@@ -56,7 +57,6 @@
             this.label3 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.insertCSVtoDB = new System.Windows.Forms.Button();
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
@@ -65,7 +65,7 @@
             // button1
             // 
             this.button1.AutoSize = true;
-            this.button1.Location = new System.Drawing.Point(643, 522);
+            this.button1.Location = new System.Drawing.Point(646, 473);
             this.button1.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(133, 26);
@@ -113,10 +113,21 @@
             this.panel2.Size = new System.Drawing.Size(1789, 750);
             this.panel2.TabIndex = 2;
             // 
+            // insertCSVtoDB
+            // 
+            this.insertCSVtoDB.AutoSize = true;
+            this.insertCSVtoDB.Location = new System.Drawing.Point(1162, 522);
+            this.insertCSVtoDB.Name = "insertCSVtoDB";
+            this.insertCSVtoDB.Size = new System.Drawing.Size(192, 26);
+            this.insertCSVtoDB.TabIndex = 31;
+            this.insertCSVtoDB.Text = "InsertDataFromCSVtoDB";
+            this.insertCSVtoDB.UseVisualStyleBackColor = true;
+            this.insertCSVtoDB.Click += new System.EventHandler(this.insertCSVtoDB_Click);
+            // 
             // AddClassRoom
             // 
             this.AddClassRoom.AutoSize = true;
-            this.AddClassRoom.Location = new System.Drawing.Point(229, 522);
+            this.AddClassRoom.Location = new System.Drawing.Point(247, 541);
             this.AddClassRoom.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.AddClassRoom.Name = "AddClassRoom";
             this.AddClassRoom.Size = new System.Drawing.Size(82, 26);
@@ -128,7 +139,7 @@
             // GetStudentCount
             // 
             this.GetStudentCount.AutoSize = true;
-            this.GetStudentCount.Location = new System.Drawing.Point(857, 522);
+            this.GetStudentCount.Location = new System.Drawing.Point(844, 522);
             this.GetStudentCount.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
             this.GetStudentCount.Name = "GetStudentCount";
             this.GetStudentCount.Size = new System.Drawing.Size(197, 26);
@@ -154,11 +165,11 @@
             // dataGridView2
             // 
             this.dataGridView2.ColumnHeadersHeightSizeMode = System.Windows.Forms.DataGridViewColumnHeadersHeightSizeMode.AutoSize;
-            this.dataGridView2.Location = new System.Drawing.Point(1308, 0);
+            this.dataGridView2.Location = new System.Drawing.Point(1294, 0);
             this.dataGridView2.Name = "dataGridView2";
             this.dataGridView2.RowHeadersWidth = 51;
             this.dataGridView2.RowTemplate.Height = 24;
-            this.dataGridView2.Size = new System.Drawing.Size(481, 319);
+            this.dataGridView2.Size = new System.Drawing.Size(408, 319);
             this.dataGridView2.TabIndex = 26;
             // 
             // dataGridView1
@@ -397,17 +408,6 @@
             this.label1.Size = new System.Drawing.Size(112, 25);
             this.label1.TabIndex = 0;
             this.label1.Text = "Room No";
-            // 
-            // insertCSVtoDB
-            // 
-            this.insertCSVtoDB.AutoSize = true;
-            this.insertCSVtoDB.Location = new System.Drawing.Point(1183, 525);
-            this.insertCSVtoDB.Name = "insertCSVtoDB";
-            this.insertCSVtoDB.Size = new System.Drawing.Size(192, 26);
-            this.insertCSVtoDB.TabIndex = 31;
-            this.insertCSVtoDB.Text = "InsertDataFromCSVtoDB";
-            this.insertCSVtoDB.UseVisualStyleBackColor = true;
-            this.insertCSVtoDB.Click += new System.EventHandler(this.insertCSVtoDB_Click);
             // 
             // Form1
             // 
