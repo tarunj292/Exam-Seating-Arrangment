@@ -17,6 +17,7 @@ using Microsoft.VisualBasic.FileIO;
 using Org.BouncyCastle.Utilities.Collections;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Microsoft.VisualBasic.Devices;
+using static iTextSharp.text.pdf.events.IndexEvents;
 
 
 namespace Exam_Seating_Arrangment
@@ -241,7 +242,7 @@ namespace Exam_Seating_Arrangment
                 }
             }
         }
-        List<string> blockNumber = new List<string>();
+        Dictionary<string, string> blockNumber = new Dictionary<string, string>();
         private void AssignStudents(SqlConnection con, string program)
         {
             List<long> AssignList = new List<long>();
@@ -259,13 +260,16 @@ namespace Exam_Seating_Arrangment
                         long rollNumber = Convert.ToInt64(reader.GetString(0));
                         string course = reader.GetString(1);
                         bool assigned = reader.GetBoolean(4);
-                        if(assigned == false)
+                        if (assigned == false)
                         {
                             foreach (var classroom in classrooms)
                             {
                                 if (classroom.Key == textBox1.Text)
                                 {
-                                    blockNumber.Add(program+classroom.Key);
+                                    if (!blockNumber.ContainsKey(classroom.Key))
+                                    {
+                                        blockNumber.Add(classroom.Key, program);
+                                    }
                                     foreach (var bench in classroom.Value)
                                     {
                                         if (bench.Count < 2)
@@ -664,11 +668,11 @@ namespace Exam_Seating_Arrangment
                 cmd.ExecuteNonQuery();
                 con.Close();
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
-                MessageBox.Show("hELLO "+ ex.Message);
+                MessageBox.Show("hELLO " + ex.Message);
             }
-            
+
         }
 
         Boolean first = true;
@@ -689,14 +693,67 @@ namespace Exam_Seating_Arrangment
                 Document document = new Document();
                 PdfWriter.GetInstance(document, fs);
                 document.Open();
+
+                Dictionary<string, long> startingRollNumbers = new Dictionary<string, long>();
+                Dictionary<string, long> lastRollNumbers = new Dictionary<string, long>();
+                /*foreach (var classroom in classrooms)
+                {
+                    foreach (var bench in classroom.Value)
+                    {
+                        foreach (var student in bench)
+                        {
+                            string subject = student.Item2;
+                            long rollNumber = student.Item1;
+
+                            if (!startingRollNumbers.ContainsKey(subject + classroom.Key))
+                            {
+                                startingRollNumbers.Add(subject + classroom.Key, rollNumber);
+                            }
+                            else
+                            {
+                                startingRollNumbers[subject + classroom.Key] = Math.Min(startingRollNumbers[subject + classroom.Key], rollNumber);
+                            }
+
+                            // Update last roll number for each subject
+                            if (!lastRollNumbers.ContainsKey(subject + classroom.Key))
+                            {
+                                lastRollNumbers.Add(subject + classroom.Key, rollNumber);
+                            }
+                            else
+                            {
+                                lastRollNumbers[subject + classroom.Key] = Math.Max(lastRollNumbers[subject + classroom.Key], rollNumber);
+                            }
+                        }
+                    }
+                }*/
+                /*foreach (var classroom in classrooms)
+                {
+                    foreach (var b in blockNumber)
+                    {
+                        if (classroom.Key == b.Key)
+                        {
+                            foreach (var entry in startingRollNumbers)
+                            {
+                                if ((b.Value+b.Key).ToUpper() == entry.Key.ToUpper())
+                                {
+                                    MessageBox.Show(b.Value.ToUpper() + entry.Key.ToUpper());
+                                    document.Add(new Paragraph("Room No: " + classroom.Key));
+                                    document.Add(new Paragraph($"Block: {b.Key+b.Value},Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
+                                    foreach (var bench in classroom.Value)
+                                    {
+                                        document.Add(new Paragraph("Bench:"));
+                                        foreach (var student in bench)
+                                        {
+                                            document.Add(new Paragraph($"  {student.Item1}: {student.Item2}"));
+                                        }
+                                    }
+                                }
+                            }
+                        } 
+                    }
+                }*/
                 foreach (var classroom in classrooms)
                 {
-                    document.Add(new Paragraph("Room No: " + classroom.Key));
-                    //Console.WriteLine(classroom.Value.Count * 2); // Print size of classroom so mul by 2
-
-                    // Calculate & print starting and last roll number for each unique course
-                    Dictionary<string, long> startingRollNumbers = new Dictionary<string, long>();
-                    Dictionary<string, long> lastRollNumbers = new Dictionary<string, long>();
                     foreach (var bench in classroom.Value)
                     {
                         foreach (var student in bench)
@@ -724,34 +781,19 @@ namespace Exam_Seating_Arrangment
                             }
                         }
                     }
-                    /*foreach(var block in blockNumber)
-                    {
-                        foreach (var entry in startingRollNumbers)
-                        {
-                            MessageBox.Show(block+ "" + entry.Key + classroom.Key);
-                            if (block == entry.Key + classroom.Key)
-                            {
-                                document.Add(new Paragraph($"Block: {block},Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
-                                break;
-                            }
-                        }
-                    }*/
-                    foreach (var entry in startingRollNumbers)
-                    {
-                        document.Add(new Paragraph($"Block: ,Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
-                    }
-
-                    // Print students assigned to each bench
-                    foreach (var bench in classroom.Value)
-                    {
-                        document.Add(new Paragraph("Bench:"));
-                        foreach (var student in bench)
-                        {
-                            document.Add(new Paragraph($"  {student.Item1}: {student.Item2}"));
-                        }
-                    }
-                    document.Add(new Paragraph());
                 }
+                foreach (var b in blockNumber)
+                {
+                    foreach(var entry in startingRollNumbers)
+                    {
+                        if(b.Value.ToUpper() == entry.Key.ToUpper())
+                        {
+                            document.Add(new Paragraph("Room No: " + b.Key));
+                            document.Add(new Paragraph($"Block: ,Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
+                        }
+                    }
+                }
+
                 //I will close document when user click finished
                 document.Close();
             }
