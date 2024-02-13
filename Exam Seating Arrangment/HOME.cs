@@ -26,6 +26,7 @@ namespace Exam_Seating_Arrangment
         // Connection string for SQL Server
         string connectionString = "Data Source=TARUNJOSHI\\SQLEXPRESS;Initial Catalog=ExaminationCell;Integrated Security=True";
         Dictionary<string, List<List<(long, string)>>> classrooms;
+
         public Form1()
         {
             InitializeComponent();
