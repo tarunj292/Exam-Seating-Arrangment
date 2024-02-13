@@ -16,7 +16,7 @@ namespace Exam_Seating_Arrangment
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new HOME());
+            Application.Run(new Form1());
         }
     }
 }
