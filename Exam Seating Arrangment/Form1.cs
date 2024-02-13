@@ -15,6 +15,8 @@ using iTextSharp.text;
 using iTextSharp.text.pdf;
 using Microsoft.VisualBasic.FileIO;
 using Org.BouncyCastle.Utilities.Collections;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
+using Microsoft.VisualBasic.Devices;
 
 
 namespace Exam_Seating_Arrangment
@@ -30,32 +32,21 @@ namespace Exam_Seating_Arrangment
         }
         private void button1_Click(object sender, EventArgs e)
         {
-            try
+            foreach (DataGridViewRow row in dataGridView1.Rows)
             {
-                using (SqlConnection con = new SqlConnection(connectionString))
+                // Check if the row is not a new row (this might be present at the end)
+                if (!row.IsNewRow)
                 {
-                    con.Open();
-                    // Create the classrooms dictionary
-                    classrooms = getClassRoomDataFromDataGridView();
-                    // Populate the classrooms dictionary based on the fetched data
-                    /*foreach (var kvp in classroomData)
+                    // Get the value of the cell in the third column (index 2, as indexing is zero-based)
+                    object cellValue = row.Cells[3].Value;
+
+                    // Check if the cell value is not null and equals "baf"
+                    if (cellValue != null && cellValue.ToString() == textBox1.Text.ToUpper())
                     {
-                        string classroomNumber = kvp.Key;
-                        int loopCondition = kvp.Value;
-                        classrooms[classroomNumber] = new List<List<(long, string)>>();
-                        for (int i = 0; i < loopCondition; i++)
-                        {
-                            classrooms[classroomNumber].Add(new List<(long, string)>());
-                        }
-                    }*/
-                    AssignStudents(con, classrooms);
-                    con.Close();
+                        // Perform actions with the row where the forth column's value is TextBox's input
+                        // Output row values or perform other actions as needed
+                    }
                 }
-                MessageBox.Show("Data successfully inserted into database.");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show($"An error occurred: {ex.Message}");
             }
         }
 
@@ -123,7 +114,7 @@ namespace Exam_Seating_Arrangment
         private void CountStudentsByDetails(SqlConnection con)
         {
             string programFilter = textBox2.Text;
-            string query = "SELECT MIN(seat_number) AS FromSeat, MAX(seat_number) AS ToSeat, COUNT(*) AS CourseCount, program AS Program, curr_year AS CurrYear FROM Student where Program = @Program GROUP BY program, curr_year;";
+            string query = "SELECT MIN(seat_number) AS FromSeat, MAX(seat_number) AS ToSeat, COUNT(*) AS CourseCount, program AS Program, curr_year AS CurrYear, COUNT(assigned) AS UnAssign FROM Student WHERE program = @Program AND assigned = 0 GROUP BY program, curr_year;";
             SqlCommand cmd = new SqlCommand(query, con);
             cmd.Parameters.AddWithValue("@Program", programFilter);
             SqlDataAdapter ad = new SqlDataAdapter(cmd);
@@ -140,15 +131,19 @@ namespace Exam_Seating_Arrangment
         {
             createColumn();
             string roomNumber = txtRoomNumber.Text;
+            int Capacity;
             if (string.IsNullOrEmpty(roomNumber))
             {
                 MessageBox.Show("Please Enter Room Number. e.g. 501");
-            }
-            int Capacity;
-            if (!int.TryParse(txtCapacity.Text, out Capacity))
-            {
-                MessageBox.Show("Invalid capacity. Please enter a valid number.");
                 return;
+            }
+            else
+            {
+                if (!int.TryParse(txtCapacity.Text, out Capacity))
+                {
+                    MessageBox.Show("Invalid capacity. Please enter a valid number.");
+                    return;
+                }
             }
 
             // Add data to dataGridView2;
@@ -169,66 +164,125 @@ namespace Exam_Seating_Arrangment
                 flag = false;
             }
         }
-        Boolean first = true;
-        private void AssignStudents(SqlConnection con, Dictionary<string, List<List<(long, string)>>> classrooms)
+        private void AssignStudents(SqlConnection con)
         {
-            FileMode fm;
-            if (first)
-            {
-                fm = FileMode.Create;
-                first = false;
-            }
-            else
-            {
-                fm = FileMode.Append;
-            }
-            using (FileStream fs = new FileStream("C://Tarun_java//seating.pdf", fm))
-            {
-                Document document = new Document();
-                PdfWriter.GetInstance(document, fs);
-                document.Open();
-                string[] programFilters = getSelectedProgramsFromDataGridView();
+            List<long> AssignList = new List<long>();
+            string[] programFilters = getSelectedProgramsFromDataGridView();
 
-                // Create a parameterized SQL query string with the appropriate number of parameters
-                string query = $"SELECT * FROM Student WHERE program IN ({string.Join(",", programFilters.Select((_, i) => $"@Program{i}"))})";
+            // Create a parameterized SQL query string with the appropriate number of parameters
+            string query = $"SELECT * FROM Student WHERE program IN ({string.Join(",", programFilters.Select((_, i) => $"@Program{i}"))})";
 
-                /*string programFilter = textBox2.Text;
-                string query = "Select * from Student where program = @Program";*/
-                using (SqlCommand command = new SqlCommand(query, con))
+            /*string programFilter = textBox2.Text;
+            string query = "Select * from Student where program = @Program";*/
+            using (SqlCommand command = new SqlCommand(query, con))
+            {
+
+                for (int i = 0; i < programFilters.Length; i++)
                 {
+                    command.Parameters.AddWithValue($"@Program{i}", programFilters[i]);
+                }
 
-                    for (int i = 0; i < programFilters.Length; i++)
+                //command.Parameters.AddWithValue("@Program", programFilter);
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    //Console.WriteLine("Roll Number\tCourse");
+                    //Console.WriteLine("------------------------");
+                    while (reader.Read())
                     {
-                        command.Parameters.AddWithValue($"@Program{i}", programFilters[i]);
-                    }
+                        long rollNumber = Convert.ToInt64(reader.GetString(0));
+                        string course = reader.GetString(1);
+                        bool assigned = reader.GetBoolean(4);
 
-                    //command.Parameters.AddWithValue("@Program", programFilter);
-                    using (SqlDataReader reader = command.ExecuteReader())
-                    {
-                        //Console.WriteLine("Roll Number\tCourse");
-                        //Console.WriteLine("------------------------");
-                        while (reader.Read())
+                        foreach (var classroom in classrooms)
                         {
-                            long rollNumber = Convert.ToInt64(reader.GetString(0));
-                            string course = reader.GetString(1);
-                            bool assigned = false;
+                            foreach (var bench in classroom.Value)
+                            {
+                                if (bench.Count < 2)
+                                {
+                                    //Console.WriteLine(CompareWithBenchsFirstStudent(course, bench));
+                                    var studentTuple = (rollNumber, course);
+                                    //Console.WriteLine(bench + " " + studentTuple);
+
+                                    bench.Add(studentTuple);
+                                    assigned = true;
+                                    break;
+                                }
+                            }
+                            if (assigned)
+                            {
+                                AssignList.Add(rollNumber);
+                                break;
+                            }
+                        }
+                        if (!assigned)
+                        {
+                            //Instead of adding it in document i am first storing them in dictionary
+                            Dictionary<long, string> UnAssigned = new Dictionary<long, string>();
+                            UnAssigned.Add(rollNumber, course);
+                            //document.Add(new Paragraph($"Unable to assign student {rollNumber} of {course}"));
+                        }
+
+                    }
+                }
+
+                using (SqlCommand updateCmd = new SqlCommand("UPDATE Student SET assigned = 1 WHERE seat_number = @RollNumber", con))
+                {
+                    foreach (long rollNumber in AssignList)
+                    {
+                        // Clear the parameters collection before adding new parameters
+                        updateCmd.Parameters.Clear();
+
+                        // Add the parameter for the current roll number
+                        updateCmd.Parameters.AddWithValue("@RollNumber", rollNumber);
+
+                        // Execute the update command
+                        updateCmd.ExecuteNonQuery();
+                    }
+                }
+            }
+        }
+        List<string> blockNumber = new List<string>();
+        private void AssignStudents(SqlConnection con, string program)
+        {
+            List<long> AssignList = new List<long>();
+
+            // Create a parameterized SQL query string with the appropriate number of parameters
+            string query = $"SELECT * FROM Student WHERE program = @Program";
+
+            using (SqlCommand command = new SqlCommand(query, con))
+            {
+                command.Parameters.AddWithValue("@Program", program);
+                using (SqlDataReader reader = command.ExecuteReader())
+                {
+                    while (reader.Read())
+                    {
+                        long rollNumber = Convert.ToInt64(reader.GetString(0));
+                        string course = reader.GetString(1);
+                        bool assigned = reader.GetBoolean(4);
+                        if(assigned == false)
+                        {
                             foreach (var classroom in classrooms)
                             {
-                                foreach (var bench in classroom.Value)
+                                if (classroom.Key == textBox1.Text)
                                 {
-                                    if (bench.Count < 2)
+                                    blockNumber.Add(program+classroom.Key);
+                                    foreach (var bench in classroom.Value)
                                     {
-                                        //Console.WriteLine(CompareWithBenchsFirstStudent(course, bench));
-                                        var studentTuple = (rollNumber, course);
-                                        //Console.WriteLine(bench + " " + studentTuple);
-
-                                        bench.Add(studentTuple);
-                                        assigned = true;
+                                        if (bench.Count < 2)
+                                        {
+                                            //Console.WriteLine(CompareWithBenchsFirstStudent(course, bench));
+                                            var studentTuple = (rollNumber, course);
+                                            bench.Add(studentTuple);
+                                            assigned = true;
+                                            break;
+                                        }
+                                    }
+                                    if (assigned)
+                                    {
+                                        AssignList.Add(rollNumber);
                                         break;
                                     }
                                 }
-                                if (assigned)
-                                    break;
                             }
                             if (!assigned)
                             {
@@ -237,70 +291,27 @@ namespace Exam_Seating_Arrangment
                                 UnAssigned.Add(rollNumber, course);
                                 //document.Add(new Paragraph($"Unable to assign student {rollNumber} of {course}"));
                             }
-
                         }
                     }
+                }
 
-                    foreach (var classroom in classrooms)
+                using (SqlCommand updateCmd = new SqlCommand("UPDATE Student SET assigned = 1 WHERE seat_number = @RollNumber", con))
+                {
+                    foreach (long rollNumber in AssignList)
                     {
-                        document.Add(new Paragraph("Room No: " + classroom.Key));
-                        //Console.WriteLine(classroom.Value.Count * 2); // Print size of classroom so mul by 2
-
-                        // Calculate & print starting and last roll number for each unique course
-                        Dictionary<string, long> startingRollNumbers = new Dictionary<string, long>();
-                        Dictionary<string, long> lastRollNumbers = new Dictionary<string, long>();
-                        foreach (var bench in classroom.Value)
-                        {
-                            foreach (var student in bench)
-                            {
-                                string subject = student.Item2;
-                                long rollNumber = student.Item1;
-
-                                if (!startingRollNumbers.ContainsKey(subject))
-                                {
-                                    startingRollNumbers.Add(subject, rollNumber);
-                                }
-                                else
-                                {
-                                    startingRollNumbers[subject] = Math.Min(startingRollNumbers[subject], rollNumber);
-                                }
-
-                                // Update last roll number for each subject
-                                if (!lastRollNumbers.ContainsKey(subject))
-                                {
-                                    lastRollNumbers.Add(subject, rollNumber);
-                                }
-                                else
-                                {
-                                    lastRollNumbers[subject] = Math.Max(lastRollNumbers[subject], rollNumber);
-                                }
-                            }
-                        }
-                        foreach (var entry in startingRollNumbers)
-                        {
-                            document.Add(new Paragraph($"Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
-                        }
-
-                        // Print students assigned to each bench
-                        foreach (var bench in classroom.Value)
-                        {
-                            document.Add(new Paragraph("Bench:"));
-                            foreach (var student in bench)
-                            {
-                                document.Add(new Paragraph($"  {student.Item1}: {student.Item2}"));
-                            }
-                        }
-                        document.Add(new Paragraph());
+                        // Clear the parameters collection before adding new parameters
+                        updateCmd.Parameters.Clear();
+                        // Add the parameter for the current roll number
+                        updateCmd.Parameters.AddWithValue("@RollNumber", rollNumber);
+                        updateCmd.ExecuteNonQuery();
                     }
-                    //I will close document when user click finished
-                    document.Close();
                 }
             }
         }
 
         private string[] getSelectedProgramsFromDataGridView()
         {
-            string[] programFilters = new string[dataGridView1.RowCount-1];
+            string[] programFilters = new string[dataGridView1.RowCount - 1];
             int count = 0;
             foreach (DataGridViewRow row in dataGridView1.Rows)
             {
@@ -322,7 +333,7 @@ namespace Exam_Seating_Arrangment
                 }
             }
 
-            for(int i = 0; i<programFilters.Count(); i++)
+            for (int i = 0; i < programFilters.Count(); i++)
             {
                 //MessageBox.Show(i.ToString());
                 //MessageBox.Show(programFilters[i]);
@@ -348,11 +359,6 @@ namespace Exam_Seating_Arrangment
             {
                 return true;
             }
-        }
-
-        private void button4_Click(object sender, EventArgs e)
-        {
-            
         }
 
         private void CSVToDBDataInsertion()
@@ -549,9 +555,10 @@ namespace Exam_Seating_Arrangment
                 MessageBox.Show("Error inserting data from Courses CSV into SQL Server: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
-
+        List<string> SelectedProgram = new List<string>();
         private void GetStudentCount_Click(object sender, EventArgs e)
         {
+            SelectedProgram.Add(textBox2.Text);
             SqlConnection con = new SqlConnection(connectionString);
             con.Open();
             CountStudentsByDetails(con);
@@ -566,6 +573,188 @@ namespace Exam_Seating_Arrangment
         {
             //Function to Call CSV to DATABASE CONVERSION
             CSVToDBDataInsertion();
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (SqlConnection con = new SqlConnection(connectionString))
+                {
+                    con.Open();
+                    // Create the classrooms dictionary
+                    classrooms = getClassRoomDataFromDataGridView();
+                    // Populate the classrooms dictionary based on the fetched data
+                    /*foreach (var kvp in classroomData)
+                    {
+                        string classroomNumber = kvp.Key;
+                        int loopCondition = kvp.Value;
+                        classrooms[classroomNumber] = new List<List<(long, string)>>();
+                        for (int i = 0; i < loopCondition; i++)
+                        {
+                            classrooms[classroomNumber].Add(new List<(long, string)>());
+                        }
+                    }*/
+                    AssignStudents(con);
+                    con.Close();
+                }
+                MessageBox.Show("Data successfully inserted into database.");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred: {ex.Message}");
+            }
+        }
+
+        private void assign_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                using (SqlConnection con = new SqlConnection(connectionString))
+                {
+                    con.Open();
+                    AssignStudents(con, textBox4.Text);
+                    CountUnAssignStudentsByDetails(con);
+                    con.Close();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"An error occurred: {ex.Message}");
+            }
+        }
+        private DataTable unAssignDataTable = new DataTable();
+        private void CountUnAssignStudentsByDetails(SqlConnection con)
+        {
+            SqlDataAdapter ad;
+            DataTable dt = new DataTable();
+            foreach (string Program in SelectedProgram)
+            {
+                string query = "SELECT MIN(seat_number) AS FromSeat, MAX(seat_number) AS ToSeat, COUNT(*) AS CourseCount, program AS Program, curr_year AS CurrYear, COUNT(assigned) AS UnAssign FROM Student WHERE program = @Program AND assigned = 0 GROUP BY program, curr_year;";
+                SqlCommand cmd = new SqlCommand(query, con);
+                cmd.Parameters.Clear();
+                cmd.Parameters.AddWithValue("@Program", Program);
+
+                ad = new SqlDataAdapter(cmd);
+                ad.Fill(dt);
+
+                /*// Merge the new DataTable with the unAssignDataTable
+                unAssignDataTable.Merge(dt);*/
+            }
+
+            // Assign unAssignDataTable to the DataGridView
+            dataGridView1.DataSource = dt;
+        }
+
+
+        private void done_Click(object sender, EventArgs e)
+        {
+            PrintDataIntoPDF();
+            MakeStudentsUnAssign();
+        }
+
+        private void MakeStudentsUnAssign()
+        {
+            try
+            {
+                SqlConnection con = new SqlConnection(connectionString);
+                con.Open();
+                string query = "UPDATE Student SET assigned = 0;";
+                SqlCommand cmd = new SqlCommand(query, con);
+                cmd.ExecuteNonQuery();
+                con.Close();
+            }
+            catch(Exception ex)
+            {
+                MessageBox.Show("hELLO "+ ex.Message);
+            }
+            
+        }
+
+        Boolean first = true;
+        private void PrintDataIntoPDF()
+        {
+            FileMode fm;
+            if (first)
+            {
+                fm = FileMode.Create;
+                first = false;
+            }
+            else
+            {
+                fm = FileMode.Append;
+            }
+            using (FileStream fs = new FileStream("C://Tarun_java//seating.pdf", fm))
+            {
+                Document document = new Document();
+                PdfWriter.GetInstance(document, fs);
+                document.Open();
+                foreach (var classroom in classrooms)
+                {
+                    document.Add(new Paragraph("Room No: " + classroom.Key));
+                    //Console.WriteLine(classroom.Value.Count * 2); // Print size of classroom so mul by 2
+
+                    // Calculate & print starting and last roll number for each unique course
+                    Dictionary<string, long> startingRollNumbers = new Dictionary<string, long>();
+                    Dictionary<string, long> lastRollNumbers = new Dictionary<string, long>();
+                    foreach (var bench in classroom.Value)
+                    {
+                        foreach (var student in bench)
+                        {
+                            string subject = student.Item2;
+                            long rollNumber = student.Item1;
+
+                            if (!startingRollNumbers.ContainsKey(subject))
+                            {
+                                startingRollNumbers.Add(subject, rollNumber);
+                            }
+                            else
+                            {
+                                startingRollNumbers[subject] = Math.Min(startingRollNumbers[subject], rollNumber);
+                            }
+
+                            // Update last roll number for each subject
+                            if (!lastRollNumbers.ContainsKey(subject))
+                            {
+                                lastRollNumbers.Add(subject, rollNumber);
+                            }
+                            else
+                            {
+                                lastRollNumbers[subject] = Math.Max(lastRollNumbers[subject], rollNumber);
+                            }
+                        }
+                    }
+                    /*foreach(var block in blockNumber)
+                    {
+                        foreach (var entry in startingRollNumbers)
+                        {
+                            MessageBox.Show(block+ "" + entry.Key + classroom.Key);
+                            if (block == entry.Key + classroom.Key)
+                            {
+                                document.Add(new Paragraph($"Block: {block},Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
+                                break;
+                            }
+                        }
+                    }*/
+                    foreach (var entry in startingRollNumbers)
+                    {
+                        document.Add(new Paragraph($"Block: ,Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
+                    }
+
+                    // Print students assigned to each bench
+                    foreach (var bench in classroom.Value)
+                    {
+                        document.Add(new Paragraph("Bench:"));
+                        foreach (var student in bench)
+                        {
+                            document.Add(new Paragraph($"  {student.Item1}: {student.Item2}"));
+                        }
+                    }
+                    document.Add(new Paragraph());
+                }
+                //I will close document when user click finished
+                document.Close();
+            }
         }
     }
 }
