@@ -745,7 +745,7 @@ namespace Exam_Seating_Arrangment
                                     //document.Add(new Paragraph($"Block: {b.Key+b.Value},Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
                                     foreach (var bench in classroom.Value)
                                     {
-                                        document.Add(new Paragraph("Bench:"));
+                                        //document.Add(new Paragraph("Bench:"));
                                         foreach (var student in bench)
                                         {
                                             document.Add(new Paragraph($" {(char)alphabet}{count} {student.Item1}: {student.Item2}"));
