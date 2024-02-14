@@ -243,6 +243,7 @@ namespace Exam_Seating_Arrangment
             }
         }
         Dictionary<string, string> blockNumber = new Dictionary<string, string>();
+        //List<string> blockNumber = new List<string>();
         private void AssignStudents(SqlConnection con, string program)
         {
             List<long> AssignList = new List<long>();
@@ -270,6 +271,7 @@ namespace Exam_Seating_Arrangment
                                     {
                                         blockNumber.Add(classroom.Key, program);
                                     }
+                                    //blockNumber.Add(program);
                                     foreach (var bench in classroom.Value)
                                     {
                                         if (bench.Count < 2)
@@ -670,7 +672,7 @@ namespace Exam_Seating_Arrangment
             }
             catch (Exception ex)
             {
-                MessageBox.Show("hELLO " + ex.Message);
+                MessageBox.Show(ex.Message);
             }
 
         }
@@ -696,7 +698,7 @@ namespace Exam_Seating_Arrangment
 
                 Dictionary<string, long> startingRollNumbers = new Dictionary<string, long>();
                 Dictionary<string, long> lastRollNumbers = new Dictionary<string, long>();
-                /*foreach (var classroom in classrooms)
+                foreach (var classroom in classrooms)
                 {
                     foreach (var bench in classroom.Value)
                     {
@@ -725,8 +727,8 @@ namespace Exam_Seating_Arrangment
                             }
                         }
                     }
-                }*/
-                /*foreach (var classroom in classrooms)
+                }
+                foreach (var classroom in classrooms)
                 {
                     foreach (var b in blockNumber)
                     {
@@ -734,62 +736,24 @@ namespace Exam_Seating_Arrangment
                         {
                             foreach (var entry in startingRollNumbers)
                             {
-                                if ((b.Value+b.Key).ToUpper() == entry.Key.ToUpper())
+                                int count = 1;
+                                int alphabet = 65;
+                                if ((b.Value + b.Key).ToUpper() == entry.Key.ToUpper())
                                 {
                                     MessageBox.Show(b.Value.ToUpper() + entry.Key.ToUpper());
                                     document.Add(new Paragraph("Room No: " + classroom.Key));
-                                    document.Add(new Paragraph($"Block: {b.Key+b.Value},Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
+                                    //document.Add(new Paragraph($"Block: {b.Key+b.Value},Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
                                     foreach (var bench in classroom.Value)
                                     {
                                         document.Add(new Paragraph("Bench:"));
                                         foreach (var student in bench)
                                         {
-                                            document.Add(new Paragraph($"  {student.Item1}: {student.Item2}"));
+                                            document.Add(new Paragraph($" {(char)alphabet}{count} {student.Item1}: {student.Item2}"));
+                                            count++;
                                         }
                                     }
                                 }
                             }
-                        } 
-                    }
-                }*/
-                foreach (var classroom in classrooms)
-                {
-                    foreach (var bench in classroom.Value)
-                    {
-                        foreach (var student in bench)
-                        {
-                            string subject = student.Item2;
-                            long rollNumber = student.Item1;
-
-                            if (!startingRollNumbers.ContainsKey(subject))
-                            {
-                                startingRollNumbers.Add(subject, rollNumber);
-                            }
-                            else
-                            {
-                                startingRollNumbers[subject] = Math.Min(startingRollNumbers[subject], rollNumber);
-                            }
-
-                            // Update last roll number for each subject
-                            if (!lastRollNumbers.ContainsKey(subject))
-                            {
-                                lastRollNumbers.Add(subject, rollNumber);
-                            }
-                            else
-                            {
-                                lastRollNumbers[subject] = Math.Max(lastRollNumbers[subject], rollNumber);
-                            }
-                        }
-                    }
-                }
-                foreach (var b in blockNumber)
-                {
-                    foreach(var entry in startingRollNumbers)
-                    {
-                        if(b.Value.ToUpper() == entry.Key.ToUpper())
-                        {
-                            document.Add(new Paragraph("Room No: " + b.Key));
-                            document.Add(new Paragraph($"Block: ,Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
                         }
                     }
                 }
