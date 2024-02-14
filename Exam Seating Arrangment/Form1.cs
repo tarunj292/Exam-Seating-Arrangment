@@ -149,7 +149,7 @@ namespace Exam_Seating_Arrangment
             }
 
             // Add data to dataGridView2;
-            dataGridView2.Rows.Add(roomNumber, Capacity);
+            dataGridView2.Rows.Add(roomNumber, Capacity, Capacity);
 
             // Clear textboxes after adding data
             txtRoomNumber.Clear();
@@ -163,6 +163,7 @@ namespace Exam_Seating_Arrangment
             {
                 dataGridView2.Columns.Add("RoomNumberColumn", "Room Number");
                 dataGridView2.Columns.Add("CapacityColumn", "Capacity");
+                dataGridView2.Columns.Add("RemainingCapacity", "Remaining Capacity");
                 flag = false;
             }
         }
@@ -257,6 +258,8 @@ namespace Exam_Seating_Arrangment
                 command.Parameters.AddWithValue("@Program", program);
                 using (SqlDataReader reader = command.ExecuteReader())
                 {
+                    int studentassigned = 0;
+                    string classroomNumber = null;
                     while (reader.Read())
                     {
                         long rollNumber = Convert.ToInt64(reader.GetString(0));
@@ -268,6 +271,7 @@ namespace Exam_Seating_Arrangment
                             {
                                 if (classroom.Key == textBox1.Text)
                                 {
+                                    classroomNumber = classroom.Key;
                                     if (!blockNumber.ContainsKey(classroom.Key))
                                     {
                                         blockNumber.Add(classroom.Key, program);
@@ -281,7 +285,7 @@ namespace Exam_Seating_Arrangment
                                             var studentTuple = (rollNumber, course);
                                             bench.Add(studentTuple);
                                             assigned = true;
-
+                                            studentassigned++;
                                             break;
                                         }
                                     }
@@ -301,6 +305,7 @@ namespace Exam_Seating_Arrangment
                             }
                         }
                     }
+                    ChangeDataGridView2(classroomNumber, studentassigned);
                 }
 
                 using (SqlCommand updateCmd = new SqlCommand("UPDATE Student SET assigned = 1 WHERE seat_number = @RollNumber", con))
@@ -313,6 +318,40 @@ namespace Exam_Seating_Arrangment
                         updateCmd.Parameters.AddWithValue("@RollNumber", rollNumber);
                         updateCmd.ExecuteNonQuery();
                     }
+                }
+            }
+        }
+
+        private void ChangeDataGridView2(string classroomNumber, int studentassigned)
+        {
+            foreach (DataGridViewRow row in dataGridView2.Rows)
+            {
+                // Retrieve data from dataGridView2
+                string roomNumber = row.Cells["RoomNumberColumn"].Value?.ToString();
+                string strCapacity = row.Cells["CapacityColumn"].Value?.ToString();
+
+                // Check if roomNumber and capacity are not null or empty
+                if (!string.IsNullOrEmpty(roomNumber) && !string.IsNullOrEmpty(strCapacity))
+                {
+                    // Convert capacity to long
+                    if (long.TryParse(strCapacity, out long capacityValue))
+                    {
+                        long capacity = Convert.ToInt64(strCapacity);
+                        if(roomNumber == classroomNumber)
+                        {
+                            row.Cells["RemainingCapacity"].Value = capacity-studentassigned;
+                        }
+                    }
+                    else
+                    {
+                        // Handle invalid capacity
+                        // You may display an error message or take appropriate action
+                    }
+                }
+                else
+                {
+                    // Handle missing room number or capacity
+                    // You may display an error message or take appropriate action
                 }
             }
         }
