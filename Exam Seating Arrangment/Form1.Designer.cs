@@ -30,6 +30,9 @@
         {
             this.button1 = new System.Windows.Forms.Button();
             this.panel2 = new System.Windows.Forms.Panel();
+            this.button5 = new System.Windows.Forms.Button();
+            this.done = new System.Windows.Forms.Button();
+            this.assign = new System.Windows.Forms.Button();
             this.insertCSVtoDB = new System.Windows.Forms.Button();
             this.AddClassRoom = new System.Windows.Forms.Button();
             this.GetStudentCount = new System.Windows.Forms.Button();
@@ -46,6 +49,7 @@
             this.textBox1 = new System.Windows.Forms.TextBox();
             this.comboBox4 = new System.Windows.Forms.ComboBox();
             this.comboBox3 = new System.Windows.Forms.ComboBox();
+            this.comboBox2 = new System.Windows.Forms.ComboBox();
             this.label9 = new System.Windows.Forms.Label();
             this.label8 = new System.Windows.Forms.Label();
             this.label7 = new System.Windows.Forms.Label();
@@ -55,10 +59,6 @@
             this.label3 = new System.Windows.Forms.Label();
             this.label2 = new System.Windows.Forms.Label();
             this.label1 = new System.Windows.Forms.Label();
-            this.assign = new System.Windows.Forms.Button();
-            this.done = new System.Windows.Forms.Button();
-            this.button5 = new System.Windows.Forms.Button();
-            this.comboBox2 = new System.Windows.Forms.ComboBox();
             this.panel2.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView2)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.dataGridView1)).BeginInit();
@@ -116,6 +116,44 @@
             this.panel2.Name = "panel2";
             this.panel2.Size = new System.Drawing.Size(1789, 750);
             this.panel2.TabIndex = 2;
+            // 
+            // button5
+            // 
+            this.button5.Font = new System.Drawing.Font("Mongolian Baiti", 11.25F);
+            this.button5.Location = new System.Drawing.Point(168, 597);
+            this.button5.Margin = new System.Windows.Forms.Padding(4);
+            this.button5.Name = "button5";
+            this.button5.Size = new System.Drawing.Size(304, 28);
+            this.button5.TabIndex = 23;
+            this.button5.Text = "Seating Arrangement Notice board";
+            this.button5.UseVisualStyleBackColor = true;
+            // 
+            // done
+            // 
+            this.done.AutoSize = true;
+            this.done.BackColor = System.Drawing.Color.Red;
+            this.done.Font = new System.Drawing.Font("Microsoft Sans Serif", 50F, System.Drawing.FontStyle.Bold);
+            this.done.ForeColor = System.Drawing.Color.LimeGreen;
+            this.done.Location = new System.Drawing.Point(1122, 560);
+            this.done.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.done.Name = "done";
+            this.done.Size = new System.Drawing.Size(256, 167);
+            this.done.TabIndex = 33;
+            this.done.Text = "Done";
+            this.done.UseVisualStyleBackColor = false;
+            this.done.Click += new System.EventHandler(this.done_Click);
+            // 
+            // assign
+            // 
+            this.assign.AutoSize = true;
+            this.assign.Location = new System.Drawing.Point(1202, 422);
+            this.assign.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
+            this.assign.Name = "assign";
+            this.assign.Size = new System.Drawing.Size(133, 26);
+            this.assign.TabIndex = 32;
+            this.assign.Text = "Assign";
+            this.assign.UseVisualStyleBackColor = true;
+            this.assign.Click += new System.EventHandler(this.assign_Click);
             // 
             // insertCSVtoDB
             // 
@@ -293,6 +331,16 @@
             this.comboBox3.Size = new System.Drawing.Size(160, 28);
             this.comboBox3.TabIndex = 12;
             // 
+            // comboBox2
+            // 
+            this.comboBox2.Font = new System.Drawing.Font("Mongolian Baiti", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.comboBox2.FormattingEnabled = true;
+            this.comboBox2.Location = new System.Drawing.Point(280, 297);
+            this.comboBox2.Margin = new System.Windows.Forms.Padding(4);
+            this.comboBox2.Name = "comboBox2";
+            this.comboBox2.Size = new System.Drawing.Size(160, 28);
+            this.comboBox2.TabIndex = 11;
+            // 
             // label9
             // 
             this.label9.AutoSize = true;
@@ -391,54 +439,6 @@
             this.label1.Size = new System.Drawing.Size(112, 25);
             this.label1.TabIndex = 0;
             this.label1.Text = "Room No";
-            // 
-            // assign
-            // 
-            this.assign.AutoSize = true;
-            this.assign.Location = new System.Drawing.Point(1202, 422);
-            this.assign.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.assign.Name = "assign";
-            this.assign.Size = new System.Drawing.Size(133, 26);
-            this.assign.TabIndex = 32;
-            this.assign.Text = "Assign";
-            this.assign.UseVisualStyleBackColor = true;
-            this.assign.Click += new System.EventHandler(this.assign_Click);
-            // 
-            // done
-            // 
-            this.done.AutoSize = true;
-            this.done.BackColor = System.Drawing.Color.Red;
-            this.done.Font = new System.Drawing.Font("Microsoft Sans Serif", 50F, System.Drawing.FontStyle.Bold);
-            this.done.ForeColor = System.Drawing.Color.LimeGreen;
-            this.done.Location = new System.Drawing.Point(1122, 560);
-            this.done.Margin = new System.Windows.Forms.Padding(3, 2, 3, 2);
-            this.done.Name = "done";
-            this.done.Size = new System.Drawing.Size(256, 167);
-            this.done.TabIndex = 33;
-            this.done.Text = "Done";
-            this.done.UseVisualStyleBackColor = false;
-            this.done.Click += new System.EventHandler(this.done_Click);
-            // 
-            // button5
-            // 
-            this.button5.Font = new System.Drawing.Font("Mongolian Baiti", 11.25F);
-            this.button5.Location = new System.Drawing.Point(168, 597);
-            this.button5.Margin = new System.Windows.Forms.Padding(4);
-            this.button5.Name = "button5";
-            this.button5.Size = new System.Drawing.Size(304, 28);
-            this.button5.TabIndex = 23;
-            this.button5.Text = "Seating Arrangement Notice board";
-            this.button5.UseVisualStyleBackColor = true;
-            // 
-            // comboBox2
-            // 
-            this.comboBox2.Font = new System.Drawing.Font("Mongolian Baiti", 11.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.comboBox2.FormattingEnabled = true;
-            this.comboBox2.Location = new System.Drawing.Point(280, 297);
-            this.comboBox2.Margin = new System.Windows.Forms.Padding(4);
-            this.comboBox2.Name = "comboBox2";
-            this.comboBox2.Size = new System.Drawing.Size(160, 28);
-            this.comboBox2.TabIndex = 11;
             // 
             // Form1
             // 

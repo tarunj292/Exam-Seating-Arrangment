@@ -275,6 +275,7 @@ namespace Exam_Seating_Arrangment
                                     if (!blockNumber.ContainsKey(classroom.Key))
                                     {
                                         blockNumber.Add(classroom.Key, program);
+
                                     }
                                     //blockNumber.Add(program);
                                     foreach (var bench in classroom.Value)
@@ -321,7 +322,7 @@ namespace Exam_Seating_Arrangment
                 }
             }
         }
-
+        bool firstCapacity = true;
         private void ChangeDataGridView2(string classroomNumber, int studentassigned)
         {
             foreach (DataGridViewRow row in dataGridView2.Rows)
@@ -329,17 +330,26 @@ namespace Exam_Seating_Arrangment
                 // Retrieve data from dataGridView2
                 string roomNumber = row.Cells["RoomNumberColumn"].Value?.ToString();
                 string strCapacity = row.Cells["CapacityColumn"].Value?.ToString();
+                long remainingCapacity = Convert.ToInt64(row.Cells["RemainingCapacity"].Value);
 
                 // Check if roomNumber and capacity are not null or empty
                 if (!string.IsNullOrEmpty(roomNumber) && !string.IsNullOrEmpty(strCapacity))
                 {
                     // Convert capacity to long
-                    if (long.TryParse(strCapacity, out long capacityValue))
+                    if (long.TryParse(strCapacity, out long capacity))
                     {
-                        long capacity = Convert.ToInt64(strCapacity);
                         if(roomNumber == classroomNumber)
                         {
-                            row.Cells["RemainingCapacity"].Value = capacity-studentassigned;
+                            if (firstCapacity)
+                            {
+                                row.Cells["RemainingCapacity"].Value = capacity - studentassigned;
+                                firstCapacity = false;
+
+                            }
+                            else
+                            {
+                                row.Cells["RemainingCapacity"].Value = remainingCapacity - studentassigned;
+                            }
                         }
                     }
                     else
@@ -655,6 +665,7 @@ namespace Exam_Seating_Arrangment
 
         private void assign_Click(object sender, EventArgs e)
         {
+            
             try
             {
                 using (SqlConnection con = new SqlConnection(connectionString))
@@ -670,6 +681,7 @@ namespace Exam_Seating_Arrangment
             {
                 MessageBox.Show($"An error occurred: {ex.Message}");
             }
+            //combinedDataTable = new DataTable();
         }
         private void CountUnAssignStudentsByDetails(SqlConnection con)
         {
@@ -749,6 +761,7 @@ namespace Exam_Seating_Arrangment
         {
             PrintDataIntoPDF();
             MakeStudentsUnAssign();
+            MessageBox.Show("Success");
         }
 
         private void MakeStudentsUnAssign()
@@ -832,7 +845,6 @@ namespace Exam_Seating_Arrangment
                                 int alphabet = 64;
                                 if ((b.Value + b.Key).ToUpper() == entry.Key.ToUpper())
                                 {
-                                    MessageBox.Show(b.Value.ToUpper() + entry.Key.ToUpper());
                                     document.Add(new Paragraph("Room No: " + classroom.Key));
                                     //document.Add(new Paragraph($"Block: {b.Key+b.Value},Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
                                     bool PdfColumn = true;
