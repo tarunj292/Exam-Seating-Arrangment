@@ -281,6 +281,7 @@ namespace Exam_Seating_Arrangment
                                             var studentTuple = (rollNumber, course);
                                             bench.Add(studentTuple);
                                             assigned = true;
+
                                             break;
                                         }
                                     }
@@ -622,6 +623,7 @@ namespace Exam_Seating_Arrangment
                     con.Open();
                     AssignStudents(con, textBox4.Text);
                     CountUnAssignStudentsByDetails(con);
+
                     con.Close();
                 }
             }
@@ -630,28 +632,78 @@ namespace Exam_Seating_Arrangment
                 MessageBox.Show($"An error occurred: {ex.Message}");
             }
         }
-        private DataTable unAssignDataTable = new DataTable();
         private void CountUnAssignStudentsByDetails(SqlConnection con)
         {
-            SqlDataAdapter ad;
+            // Create a new DataTable to store the data with an empty CourseCount column
             DataTable dt = new DataTable();
+            dt.Columns.Add("FromSeat", typeof(long));
+            dt.Columns.Add("ToSeat", typeof(long));
+            dt.Columns.Add("Program", typeof(string));
+            dt.Columns.Add("CurrYear", typeof(string));
+            dt.Columns.Add("UnAssign", typeof(int));
+            dt.Columns.Add("CourseCount", typeof(int)); // Add empty CourseCount column
+            
+            // Fetch data for other columns
             foreach (string Program in SelectedProgram)
             {
-                string query = "SELECT MIN(seat_number) AS FromSeat, MAX(seat_number) AS ToSeat, COUNT(*) AS CourseCount, program AS Program, curr_year AS CurrYear, COUNT(assigned) AS UnAssign FROM Student WHERE program = @Program AND assigned = 0 GROUP BY program, curr_year;";
+                string query = "SELECT MIN(seat_number) AS FromSeat, MAX(seat_number) AS ToSeat, program AS Program, curr_year AS CurrYear, COUNT(assigned) AS UnAssign FROM Student WHERE program = @Program AND assigned = 0 GROUP BY program, curr_year;";
                 SqlCommand cmd = new SqlCommand(query, con);
                 cmd.Parameters.Clear();
                 cmd.Parameters.AddWithValue("@Program", Program);
+                
+                SqlDataAdapter ad = new SqlDataAdapter(cmd);
+                DataTable newDt = new DataTable();
+                newDt.Columns.Add("FromSeat", typeof(long));
+                newDt.Columns.Add("ToSeat", typeof(long));
+                newDt.Columns.Add("Program", typeof(string));
+                newDt.Columns.Add("CurrYear", typeof(string));
+                newDt.Columns.Add("UnAssign", typeof(int));
+                newDt.Columns.Add("CourseCount", typeof(int));
+                ad.Fill(newDt);
 
-                ad = new SqlDataAdapter(cmd);
-                ad.Fill(dt);
+                
+                // Merge the new DataTable with the main DataTable
 
-                /*// Merge the new DataTable with the unAssignDataTable
-                unAssignDataTable.Merge(dt);*/
+                dt.Merge(newDt);
             }
 
-            // Assign unAssignDataTable to the DataGridView
+            // Fetch existing data for the CourseCount column
+            foreach (DataRow row in dt.Rows)
+            {
+                string program = row["Program"].ToString();
+                string currYear = row["CurrYear"].ToString();
+
+                // Fetch existing CourseCount from your DataGridView (assuming it's already populated)
+                // and populate it in the DataTable
+                int existingCourseCount = GetExistingCourseCountFromDataGridView(program, currYear);
+                row["CourseCount"] = existingCourseCount;
+            }
+            
+            // Assign the updated DataTable to the DataGridView
             dataGridView1.DataSource = dt;
         }
+
+        // Function to fetch existing CourseCount from DataGridView
+        private int GetExistingCourseCountFromDataGridView(string program, string currYear)
+        {
+            int courseCount = 0;
+
+            // Iterate through the rows of the DataGridView
+            foreach (DataGridViewRow row in dataGridView1.Rows)
+            {
+                // Check if the program and current year match
+                if (row.Cells["Program"].Value.ToString() == program &&
+                    row.Cells["CurrYear"].Value.ToString() == currYear)
+                {
+                    // Retrieve the existing course count from the "CourseCount" column
+                    courseCount = Convert.ToInt32(row.Cells["CourseCount"].Value);
+                    break; // No need to continue iterating once found
+                }
+            }
+
+            return courseCount;
+        }
+
 
 
         private void done_Click(object sender, EventArgs e)
