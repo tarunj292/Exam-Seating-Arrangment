@@ -18,6 +18,7 @@ using Org.BouncyCastle.Utilities.Collections;
 using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 using Microsoft.VisualBasic.Devices;
 using static iTextSharp.text.pdf.events.IndexEvents;
+using System.Reflection.Emit;
 
 
 namespace Exam_Seating_Arrangment
@@ -737,20 +738,39 @@ namespace Exam_Seating_Arrangment
                             foreach (var entry in startingRollNumbers)
                             {
                                 int count = 1;
-                                int alphabet = 65;
+                                int alphabet = 64;
                                 if ((b.Value + b.Key).ToUpper() == entry.Key.ToUpper())
                                 {
                                     MessageBox.Show(b.Value.ToUpper() + entry.Key.ToUpper());
                                     document.Add(new Paragraph("Room No: " + classroom.Key));
                                     //document.Add(new Paragraph($"Block: {b.Key+b.Value},Subject: {entry.Key}, Starting Roll Number: {entry.Value}, Last Roll Number: {lastRollNumbers[entry.Key]}"));
+                                    bool PdfColumn = true;
+                                    HashSet<string> program = new HashSet<string>();
                                     foreach (var bench in classroom.Value)
                                     {
                                         //document.Add(new Paragraph("Bench:"));
+                                        PdfPTable table = new PdfPTable(2);
+                                        
                                         foreach (var student in bench)
                                         {
-                                            document.Add(new Paragraph($" {(char)alphabet}{count} {student.Item1}: {student.Item2}"));
+                                            if (!program.Contains(student.Item2))
+                                            {
+                                                program.Add(student.Item2);
+                                                alphabet++;
+                                                count = 1;
+                                                PdfColumn = true;
+                                            }
+                                            if (PdfColumn)
+                                            {
+                                                table.AddCell("");
+                                                table.AddCell(student.Item2);
+                                                PdfColumn = false;
+                                            }
+                                            table.AddCell($"{(char)alphabet} {count}");
+                                            table.AddCell(student.Item1.ToString());
                                             count++;
                                         }
+                                        document.Add(table);
                                     }
                                 }
                             }
